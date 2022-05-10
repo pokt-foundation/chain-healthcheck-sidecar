@@ -1,12 +1,13 @@
 import { getHeightEVM, localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from './common'
 
 const REMOTE_ENDPOINTS = [
-    'https://eth-rpc.gateway.pokt.network',
+    "https://rpc.gnosischain.com/",
+    "https://xdai.poanetwork.dev/",
 ]
 
 export default {
-    id: '0021',
-    name: 'Etherium Mainnet',
+    id: '0027',
+    name: 'Gnosis - xDai',
     getLocalHeight: () => localRPCWrapper(getHeightEVM, localRPCEndpoint()),
-    getRemoteHeight: () => remoteRPCIterator(REMOTE_ENDPOINTS, getHeightEVM),
-}
+    getRemoteHeight: () => remoteRPCIterator(REMOTE_ENDPOINTS, getHeightEVM)
+} 

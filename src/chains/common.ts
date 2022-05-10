@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { logger } from '@src/index';
+import { logger } from '../index';
 import { Counter } from 'prom-client';
 
 const {
@@ -25,7 +25,11 @@ export const getHeightEVM = async (rpc: string, method = 'eth_blockNumber') => {
         },
     })
 
-    return result.data.height as number
+    const { data } = result
+
+    logger.debug({ data, rpc, method }, 'response from EVM RPC')
+
+    return data.result as number
 }
 
 export const remoteRPCIterator = async (rpcs: string[], handler: (...any) => Promise<number>, ...args) => {
@@ -44,7 +48,7 @@ export const remoteRPCIterator = async (rpcs: string[], handler: (...any) => Pro
 
 export const localRPCWrapper = async (handler: (...any) => Promise<number>, ...args) => {
     try {
-        return await handler(localRPCEndpoint(), ...args)
+        return await handler(...args)
     } catch {
         failedRpcChecks.labels({ chain_id: sidecarChainID(), destination: 'local' }).inc()
         logger.error(`Local blockchain node is unavailable`)
@@ -53,9 +57,15 @@ export const localRPCWrapper = async (handler: (...any) => Promise<number>, ...a
 }
 
 export const localRPCEndpoint = () => {
+    if (!LOCAL_RPC_ENDPOINT) {
+        logger.error(`LOCAL_RPC_ENDPOINT is not set.`)
+    }
     return LOCAL_RPC_ENDPOINT
 }
 
 export const sidecarChainID = () => {
+    if (!SIDECAR_CHAIN_ID) {
+        logger.error(`SIDECAR_CHAIN_ID is not set.`)
+    }
     return SIDECAR_CHAIN_ID
 }

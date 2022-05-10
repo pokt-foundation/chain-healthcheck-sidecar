@@ -1,4 +1,4 @@
-import { getHeightEVM, localRPCEndpoint, remoteRPCIterator } from '@chains/common'
+import { getHeightEVM, localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from './common'
 
 const REMOTE_ENDPOINTS = [
     "https://rpc.s0.t.hmny.io"
@@ -7,6 +7,6 @@ const REMOTE_ENDPOINTS = [
 export default {
     id: '0040',
     name: 'Harmony Shard 0',
-    getLocalHeight: () => getHeightEVM(localRPCEndpoint(), 'hmyv2_blockNumber'),
+    getLocalHeight: () => localRPCWrapper(getHeightEVM, localRPCEndpoint(), 'hmyv2_blockNumber'),
     getRemoteHeight: () => remoteRPCIterator(REMOTE_ENDPOINTS, getHeightEVM, 'hmyv2_blockNumber')
 } 

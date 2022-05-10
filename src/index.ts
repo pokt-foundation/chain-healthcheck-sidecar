@@ -1,15 +1,17 @@
 import express from "express";
 import pino from "pino";
 import { register, collectDefaultMetrics, Gauge } from "prom-client";
-import { currentChain } from "@chains";
-
-export const logger = pino()
 
 const {
     INCLUDE_NODEJS_METRICS,
     INTERVAL_SECONDS,
+    LOG_LEVEL,
     HEIGHT_DIFF_THRESHOLD,
 } = process.env;
+
+export const logger = pino({ level: LOG_LEVEL || 'info' })
+
+import { currentChain } from "./chains";
 
 const DEFAULT_HEIGHT_DIFF_THRESHOLD = 100
 
@@ -33,7 +35,6 @@ const remoteHeight = new Gauge({
 });
 
 const app = express();
-const { id: chain_id, getLocalHeight, getRemoteHeight } = currentChain()
 
 // In case we want to troubleshoot the healthcheck sidecar itself.
 if (INCLUDE_NODEJS_METRICS === "true") {
@@ -50,12 +51,20 @@ app.get("/metrics", async (_req, res) => {
     }
 });
 
+// Readiness probes determine whether or not a container is ready to serve requests.
+// If the readiness probe returns a failed state, then Kubernetes removes the IP address for the container from the endpoints of all Services.
+// 
+// TODO: Add liveness checks (that will kill/redeploy the container. Possibly when the node is stuck on some height?)
+// TODO: startup checks (that must pass before the other checks start working);
 app.get("/health/readiness", async (req, res) => {
-    const { ignoreDifferenceBetweenLocalAndRemote,
+    const {
+        ignoreDifferenceBetweenLocalAndRemote,
         localRPCReady,
         localHeight,
-        remoteHeight, } =
-        sidecarStatus;
+        remoteHeight,
+    } = sidecarStatus;
+
+    logger.debug({ sidecarStatus }, 'readiness check')
 
     if (!localRPCReady) {
         return res.status(503).send(`RPC not ready, reported height ${localHeight}`);
@@ -87,9 +96,15 @@ app.get("/health/readiness", async (req, res) => {
         );
 });
 
+// TODO: add an option to extend the check for chains that might require additional health-checks other than height comparison.
 const performChecks = async () => {
+    const { id: chain_id, getLocalHeight, getRemoteHeight } = currentChain
+
     sidecarStatus.localHeight = await getLocalHeight();
-    localHeight.labels({ chain_id }).set(sidecarStatus.localHeight);
+    if (typeof sidecarStatus.localHeight === 'number') {
+        localHeight.labels({ chain_id }).set(sidecarStatus.localHeight);
+    }
+
     // If the call was unsuccessful we get -1, and deem the node not ready.
     if (sidecarStatus.localHeight > 0) {
         sidecarStatus.localRPCReady = true;
@@ -98,7 +113,11 @@ const performChecks = async () => {
     }
 
     sidecarStatus.remoteHeight = await getRemoteHeight()
-    remoteHeight.labels({ chain_id }).set(sidecarStatus.remoteHeight)
+
+    if (typeof sidecarStatus.remoteHeight === 'number') {
+        remoteHeight.labels({ chain_id }).set(sidecarStatus.remoteHeight)
+    }
+
     // If remote RPC call is not successful, we should probably ignore the difference between local & remote.
     // So we don't end up in a situation when oracles went bad and our service degrades because of that.
     if (sidecarStatus.remoteHeight < 0) {
@@ -106,10 +125,16 @@ const performChecks = async () => {
     } else {
         sidecarStatus.ignoreDifferenceBetweenLocalAndRemote = false;
     }
+
+    logger.debug({ sidecarStatus }, 'check finished')
 };
 
+// Run the check periodically
 (async () => {
-    performChecks();
+    const { id, name } = currentChain
+    logger.info(`Starting checks for ${name} (${id})`)
+
+    await performChecks();
     setInterval(() => {
         performChecks();
     }, Number(INTERVAL_SECONDS || 15) * 1000);

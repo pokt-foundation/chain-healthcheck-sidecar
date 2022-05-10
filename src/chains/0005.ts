@@ -1,12 +1,12 @@
 import { getHeightEVM, localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from './common'
 
 const REMOTE_ENDPOINTS = [
-    'https://eth-rpc.gateway.pokt.network',
+    "https://rpc.fuse.io/",
 ]
 
 export default {
-    id: '0021',
-    name: 'Etherium Mainnet',
+    id: '0005',
+    name: 'FUSE Mainnet',
     getLocalHeight: () => localRPCWrapper(getHeightEVM, localRPCEndpoint()),
-    getRemoteHeight: () => remoteRPCIterator(REMOTE_ENDPOINTS, getHeightEVM),
-}
+    getRemoteHeight: () => remoteRPCIterator(REMOTE_ENDPOINTS, getHeightEVM)
+} 

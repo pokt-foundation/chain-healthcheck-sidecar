@@ -1,12 +1,15 @@
 import { getHeightEVM, localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from './common'
 
+// https://docs.polygon.technology/docs/develop/network-details/network/
 const REMOTE_ENDPOINTS = [
-    'https://eth-rpc.gateway.pokt.network',
+    'https://polygon-rpc.com/',
+    'https://rpc-mainnet.matic.network/',
+    'https://matic-mainnet.chainstacklabs.com/',
 ]
 
 export default {
-    id: '0021',
-    name: 'Etherium Mainnet',
+    id: '0009',
+    name: 'Polygon Mainnet',
     getLocalHeight: () => localRPCWrapper(getHeightEVM, localRPCEndpoint()),
     getRemoteHeight: () => remoteRPCIterator(REMOTE_ENDPOINTS, getHeightEVM),
 }

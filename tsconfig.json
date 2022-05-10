@@ -6,19 +6,8 @@
         "moduleResolution": "node",
         "sourceMap": true,
         "outDir": "dist",
-        "paths": {
-            "@src/*": [
-                "./src/*"
-            ],
-            "@chains/*": [
-                "./src/chains/*"
-            ],
-            "@chains": [
-                "./src/chains/index"
-            ],
-        }
     },
     "lib": [
         "es2021"
-    ]
+    ],
 }

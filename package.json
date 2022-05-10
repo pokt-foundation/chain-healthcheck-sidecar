@@ -1,5 +1,5 @@
 {
-    "name": "harmony-helper",
+    "name": "chain-healthcheck-sidecar",
     "version": "1.0.0",
     "description": "",
     "main": "src/index.ts",
@@ -9,15 +9,15 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/srvio/harmony-helper.git"
+        "url": "git+https://github.com/pokt-foundation/chain-healthcheck-sidecar.git"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "bugs": {
-        "url": "https://github.com/srvio/harmony-helper/issues"
+        "url": "https://github.com/pokt-foundation/chain-healthcheck-sidecar/issues"
     },
-    "homepage": "https://github.com/srvio/harmony-helper#readme",
+    "homepage": "https://github.com/pokt-foundation/chain-healthcheck-sidecar#readme",
     "devDependencies": {
         "@types/express": "^4.17.13",
         "ts-node": "^10.7.0",
