@@ -8,17 +8,17 @@ on:
     
 env:
   IMAGE_TAGS: |
+    type=schedule
+    type=semver,pattern={{version}}
+    type=semver,pattern={{major}}.{{minor}}
+    type=semver,pattern={{major}}
     type=ref,event=branch
     type=ref,event=pr
-    type=ref,event=tag
-    type=sha,format=long
+    type=sha
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
     - name: Docker Setup QEMU
