@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ master, dk-ci ]
+    branches: [ master ]
   pull_request:
     branches: [ master, dk-ci ]
     
