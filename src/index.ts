@@ -104,7 +104,7 @@ const performChecks = async () => {
     const { id: chain_id, getLocalHeight, getRemoteHeight } = currentChain
 
     sidecarStatus.localHeight = await getLocalHeight();
-    if (typeof sidecarStatus.localHeight === 'number' && sidecarStatus.localHeight > 0) {
+    if (sidecarStatus.localHeight > 0) {
         localHeightMetric.labels({ chain_id }).set(sidecarStatus.localHeight);
     }
 
@@ -117,7 +117,7 @@ const performChecks = async () => {
 
     sidecarStatus.remoteHeight = await getRemoteHeight()
 
-    if (typeof sidecarStatus.remoteHeight === 'number' && sidecarStatus.localHeight > 0) {
+    if (sidecarStatus.localHeight > 0) {
         remoteHeightMetric.labels({ chain_id }).set(sidecarStatus.remoteHeight)
     }
 

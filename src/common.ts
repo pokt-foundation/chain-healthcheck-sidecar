@@ -23,13 +23,18 @@ export const getHeightEVM = async (rpc: string, method = 'eth_blockNumber') => {
             method,
             params: [],
         },
+        timeout: 5000
     })
 
     const { data } = result
 
     logger.debug({ data, rpc, method }, 'response from EVM RPC')
 
-    return data.result as number
+    if (typeof data.result === 'number') {
+        return data.result
+    } else {
+        return parseInt(data.result, 16)
+    }
 }
 
 export const remoteRPCIterator = async (rpcs: string[], handler: (...any) => Promise<number>, ...args) => {
