@@ -25,13 +25,13 @@ const sidecarStatus = {
     remoteHeight: -2,
 };
 
-const localHeight = new Gauge({
+const localHeightMetric = new Gauge({
     name: "blockchain_local_node_height",
     help: "Local blockchain node height",
     labelNames: ["chain_id"],
 });
 
-const remoteHeight = new Gauge({
+const remoteHeightMetric = new Gauge({
     name: "blockchain_remote_node_height",
     help: "Remote blockchain node height",
     labelNames: ["chain_id"],
@@ -104,8 +104,8 @@ const performChecks = async () => {
     const { id: chain_id, getLocalHeight, getRemoteHeight } = currentChain
 
     sidecarStatus.localHeight = await getLocalHeight();
-    if (typeof sidecarStatus.localHeight === 'number') {
-        localHeight.labels({ chain_id }).set(sidecarStatus.localHeight);
+    if (typeof sidecarStatus.localHeight === 'number' && sidecarStatus.localHeight > 0) {
+        localHeightMetric.labels({ chain_id }).set(sidecarStatus.localHeight);
     }
 
     // If the call was unsuccessful we get -1, and deem the node not ready.
@@ -117,8 +117,8 @@ const performChecks = async () => {
 
     sidecarStatus.remoteHeight = await getRemoteHeight()
 
-    if (typeof sidecarStatus.remoteHeight === 'number') {
-        remoteHeight.labels({ chain_id }).set(sidecarStatus.remoteHeight)
+    if (typeof sidecarStatus.remoteHeight === 'number' && sidecarStatus.localHeight > 0) {
+        remoteHeightMetric.labels({ chain_id }).set(sidecarStatus.remoteHeight)
     }
 
     // If remote RPC call is not successful, we should probably ignore the difference between local & remote.
