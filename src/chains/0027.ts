@@ -1,4 +1,4 @@
-import { getHeightEVM, localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from './common'
+import { getHeightEVM, localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from '../common'
 
 const REMOTE_ENDPOINTS = [
     "https://rpc.gnosischain.com/",

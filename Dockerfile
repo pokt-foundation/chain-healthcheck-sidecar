@@ -12,4 +12,4 @@ COPY . .
 RUN npm run-script build && rm -rf ./src
 
 EXPOSE 9090
-CMD [ "node", "dist/main.js" ]
+CMD [ "node", "dist/index.js" ]

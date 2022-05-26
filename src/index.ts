@@ -7,7 +7,10 @@ const {
     INTERVAL_SECONDS,
     LOG_LEVEL,
     HEIGHT_DIFF_THRESHOLD,
+    LISTEN_PORT,
 } = process.env;
+
+const listenPort = Number(LISTEN_PORT || 9090);
 
 export const logger = pino({ level: LOG_LEVEL || 'info' })
 
@@ -131,6 +134,10 @@ const performChecks = async () => {
 
 // Run the check periodically
 (async () => {
+    if (!currentChain && !currentChain.id) {
+        logger.error("Chain is not configured.")
+    }
+
     const { id, name } = currentChain
     logger.info(`Starting checks for ${name} (${id})`)
 
@@ -141,9 +148,9 @@ const performChecks = async () => {
 })();
 
 // Start server
-const server = app.listen(9090);
+const server = app.listen(listenPort);
 
-logger.info("Listening on :9090");
+logger.info(`Listening on :${listenPort}`);
 process.on("SIGTERM", () => {
     logger.info("SIGTERM signal received: closing HTTP server");
     server.close(() => {

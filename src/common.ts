@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { logger } from '../index';
+import { logger } from './index';
 import { Counter } from 'prom-client';
 
 const {
