@@ -70,6 +70,7 @@ app.get("/health/readiness", async (req, res) => {
     logger.debug({ sidecarStatus }, 'readiness check')
 
     if (!localRPCReady) {
+        logger.info({ localHeight, localRPCReady }, 'failing a health-check as local RPC is not ready')
         return res.status(503).send(`RPC not ready, reported height ${localHeight}`);
     }
 
@@ -92,6 +93,8 @@ app.get("/health/readiness", async (req, res) => {
             );
     }
 
+    logger.info({ localHeight, remoteHeight, diff, threshold }, 'failing a health-check as node is behind')
+
     return res
         .status(503)
         .send(
@@ -110,8 +113,14 @@ const performChecks = async () => {
 
     // If the call was unsuccessful we get -1, and deem the node not ready.
     if (sidecarStatus.localHeight > 0) {
+        if (!sidecarStatus.localRPCReady) {
+            logger.info({ sidecarStatus }, 'local RPC became available - setting localRPCReady to true')
+        }
         sidecarStatus.localRPCReady = true;
     } else {
+        if (sidecarStatus.localRPCReady) {
+            logger.info({ sidecarStatus }, 'local RPC is unavailable - setting localRPCReady to false')
+        }
         sidecarStatus.localRPCReady = false;
     }
 
@@ -124,8 +133,14 @@ const performChecks = async () => {
     // If remote RPC call is not successful, we should probably ignore the difference between local & remote.
     // So we don't end up in a situation when oracles went bad and our service degrades because of that.
     if (sidecarStatus.remoteHeight < 0) {
+        if (!sidecarStatus.ignoreDifferenceBetweenLocalAndRemote) {
+            logger.info({ sidecarStatus }, 'remote RPC is no longer available - setting ignoreDifferenceBetweenLocalAndRemote to true')
+        }
         sidecarStatus.ignoreDifferenceBetweenLocalAndRemote = true;
     } else {
+        if (sidecarStatus.ignoreDifferenceBetweenLocalAndRemote) {
+            logger.info({ sidecarStatus }, 'remote RPC became available - setting ignoreDifferenceBetweenLocalAndRemote to false')
+        }
         sidecarStatus.ignoreDifferenceBetweenLocalAndRemote = false;
     }
 

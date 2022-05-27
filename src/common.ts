@@ -41,9 +41,9 @@ export const remoteRPCIterator = async (rpcs: string[], handler: (...any) => Pro
     for (let i = 0; i < rpcs.length; i++) {
         try {
             return await handler(rpcs[i], ...args)
-        } catch {
+        } catch (error) {
             failedRpcChecks.labels({ chain_id: sidecarChainID(), destination: rpcs[i] }).inc()
-            logger.error(`${rpcs[i]} is unavailable, trying next one..`)
+            logger.error({ error }, `${rpcs[i]} is unavailable, trying next one..`)
         }
     }
 
@@ -54,9 +54,9 @@ export const remoteRPCIterator = async (rpcs: string[], handler: (...any) => Pro
 export const localRPCWrapper = async (handler: (...any) => Promise<number>, ...args) => {
     try {
         return await handler(...args)
-    } catch {
+    } catch (error) {
         failedRpcChecks.labels({ chain_id: sidecarChainID(), destination: 'local' }).inc()
-        logger.error(`Local blockchain node is unavailable`)
+        logger.error({ error }, `Local blockchain node is unavailable`)
         return -1
     }
 }
