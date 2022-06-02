@@ -1,4 +1,5 @@
-import { getHeightEVM, localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from './common'
+import { getHeightEVM } from './strategies/evm'
+import { localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from './strategies/'
 
 const REMOTE_ENDPOINTS = [
     'https://eth-rpc.gateway.pokt.network',

@@ -1,4 +1,5 @@
-import { getHeightEVM, localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from './common'
+import { localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from './strategies'
+import { getHeightEVM } from './strategies/evm'
 
 const REMOTE_ENDPOINTS = [
     "https://rpc.fuse.io/",

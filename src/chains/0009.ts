@@ -1,4 +1,5 @@
-import { getHeightEVM, localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from './common'
+import { getHeightEVM } from './strategies/evm'
+import { localRPCEndpoint, localRPCWrapper, remoteRPCIterator } from './strategies/'
 
 // https://docs.polygon.technology/docs/develop/network-details/network/
 const REMOTE_ENDPOINTS = [
