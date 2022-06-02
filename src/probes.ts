@@ -12,16 +12,14 @@ export const diffThreshold = Number(HEIGHT_DIFF_THRESHOLD || DEFAULT_HEIGHT_DIFF
 export const readinessProbe = async (_req, res) => {
     const {
         monitoringIsUnstable,
-        localRPCReady,
+        localRPCAvailable,
         localHeight,
         remoteHeight,
         currentDiff,
     } = sidecarStatus;
 
-    logger.debug({ sidecarStatus }, 'readiness check')
-
-    if (!localRPCReady) {
-        logger.info({ localHeight, localRPCReady }, '[READINESS_PROBE]: Failing a health-check as local RPC is not ready')
+    if (!localRPCAvailable) {
+        logger.info({ localHeight, localRPCAvailable }, '[READINESS_PROBE]: Failing a health-check as local RPC is not ready')
         return res.status(503).send(`RPC not ready, reported height ${localHeight}`);
     }
 
@@ -54,19 +52,18 @@ export const readinessProbe = async (_req, res) => {
 export const livenessProbe = async (_req, res) => {
     const {
         monitoringIsUnstable,
-        localRPCReady,
+        localRPCAvailable,
         localHeight,
         currentDiff,
         isNotClimbing,
     } = sidecarStatus;
 
-    if (!localRPCReady) {
-        logger.info({ localHeight, localRPCReady }, '[LIVENESS_PROBE]: Failing a health-check as local RPC is not ready')
+    if (!localRPCAvailable) {
+        logger.info({ localHeight, localRPCAvailable }, '[LIVENESS_PROBE]: Failing a health-check as local RPC is not ready')
         return res.status(503).send(`RPC not ready, reported height ${localHeight}`);
     }
 
     if (isNotClimbing) {
-
         // Edge case: whole blockchain is halted. In that case the assumption is we don't want to restart the nodes.
         // For this to happen: monitoring should be stable, difference should be within threshold
         if (!monitoringIsUnstable && currentDiff <= diffThreshold) {
@@ -82,12 +79,12 @@ export const livenessProbe = async (_req, res) => {
 
 export const startupProbe = async (_req, res) => {
     const {
-        localRPCReady,
+        localNodeInitialized,
     } = sidecarStatus;
 
-    if (!localRPCReady) {
-        logger.info({ localRPCReady }, '[STARTUP_PROBE]: Failing a health-check as local RPC is not ready')
-        return res.status(503).send(`RPC is not ready`);
+    if (!localNodeInitialized) {
+        logger.info({ localNodeInitialized }, '[STARTUP_PROBE]: Failing a health-check as local node is not initialized yet')
+        return res.status(503).send(`node is not initialized yet`);
     }
 
     return res.status(200).send('OK')

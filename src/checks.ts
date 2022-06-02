@@ -26,46 +26,45 @@ export const updateHeight = async () => {
     const { id: chain_id, getLocalHeight, getRemoteHeight } = currentChain
     sidecarStatus.localHeight = await getLocalHeight();
 
+    // Negative height means RPC is not available.
     if (sidecarStatus.localHeight > 0) {
         localHeightMetric.labels({ chain_id }).set(sidecarStatus.localHeight);
+
+        if (!sidecarStatus.localRPCAvailable) {
+            logger.info('[UPDATE_HEIGHT]: local RPC became available - setting localRPCReady to true')
+        }
+        sidecarStatus.localRPCAvailable = true;
+
+        // If rpc ever got available - mark node as initialized.
+        sidecarStatus.localNodeInitialized = true;
+    } else {
+        if (sidecarStatus.localRPCAvailable) {
+            logger.info('[UPDATE_HEIGHT]: local RPC is unavailable - setting localRPCReady to false')
+        }
+        sidecarStatus.localRPCAvailable = false;
     }
 
     sidecarStatus.remoteHeight = await getRemoteHeight()
-
     if (sidecarStatus.localHeight > 0) {
         remoteHeightMetric.labels({ chain_id }).set(sidecarStatus.remoteHeight)
+
+        if (sidecarStatus.monitoringIsUnstable) {
+            logger.info({ sidecarStatus }, '[UPDATE_HEIGHT]: remote RPC became available - setting monitoringIsUnstable to false')
+        }
+        sidecarStatus.monitoringIsUnstable = false;
+    } else {
+        if (!sidecarStatus.monitoringIsUnstable) {
+            logger.info({ sidecarStatus }, '[UPDATE_HEIGHT]: remote RPC is no longer available - setting monitoringIsUnstable to true')
+        }
+
+        // If remote RPC call is not successful, we should probably ignore the difference between local & remote.
+        // So we don't end up in a situation when oracles went bad and our service degrades because of that.
+        sidecarStatus.monitoringIsUnstable = true;
     }
 }
 
 export const diffCheck = async () => {
     const { id: chain_id } = currentChain
-
-    // Negative height means node is not ready.
-    if (sidecarStatus.localHeight > 0) {
-        if (!sidecarStatus.localRPCReady) {
-            logger.info('[DIFF_CHECK]: local RPC became available - setting localRPCReady to true')
-        }
-        sidecarStatus.localRPCReady = true;
-    } else {
-        if (sidecarStatus.localRPCReady) {
-            logger.info('[DIFF_CHECK]: local RPC is unavailable - setting localRPCReady to false')
-        }
-        sidecarStatus.localRPCReady = false;
-    }
-
-    // If remote RPC call is not successful, we should probably ignore the difference between local & remote.
-    // So we don't end up in a situation when oracles went bad and our service degrades because of that.
-    if (sidecarStatus.remoteHeight < 0) {
-        if (!sidecarStatus.monitoringIsUnstable) {
-            logger.info({ sidecarStatus }, '[DIFF_CHECK]: remote RPC is no longer available - setting monitoringIsUnstable to true')
-        }
-        sidecarStatus.monitoringIsUnstable = true;
-    } else {
-        if (sidecarStatus.monitoringIsUnstable) {
-            logger.info({ sidecarStatus }, '[DIFF_CHECK]: remote RPC became available - setting monitoringIsUnstable to false')
-        }
-        sidecarStatus.monitoringIsUnstable = false;
-    }
 
     if (sidecarStatus.localHeight > 0 && sidecarStatus.remoteHeight > 0) {
         sidecarStatus.currentDiff = sidecarStatus.remoteHeight - sidecarStatus.localHeight;

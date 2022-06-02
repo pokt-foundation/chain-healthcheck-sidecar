@@ -18,7 +18,8 @@ export const logger = pino({ level: LOG_LEVEL || 'info' })
 
 export const sidecarStatus = {
     monitoringIsUnstable: false,
-    localRPCReady: false,
+    localRPCAvailable: false,
+    localNodeInitialized: false,
     localHeight: -2,
     remoteHeight: -2,
     currentDiff: 0,
