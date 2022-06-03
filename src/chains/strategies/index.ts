@@ -1,4 +1,4 @@
-import { logger } from "../.."
+import { logger, sidecarStatus } from "../.."
 import { sidecarChainID } from "../../common"
 import { failedRpcChecks } from "../../metrics"
 
@@ -24,7 +24,10 @@ export const localRPCWrapper = async (handler: (...any) => Promise<number>, ...a
     try {
         return await handler(...args)
     } catch (error) {
-        failedRpcChecks.labels({ chain_id: sidecarChainID(), destination: 'local' }).inc()
+        // Only count errors after the node has been initialized.
+        if (sidecarStatus.localNodeInitialized) {
+            failedRpcChecks.labels({ chain_id: sidecarChainID(), destination: 'local' }).inc()
+        }
         logger.error({ error }, `Local blockchain node is unavailable`)
         return -1
     }
