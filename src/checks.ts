@@ -59,7 +59,9 @@ export const updateHeight = async () => {
 
         // If remote RPC call is not successful, we should probably ignore the difference between local & remote.
         // So we don't end up in a situation when oracles went bad and our service degrades because of that.
-        sidecarStatus.monitoringIsUnstable = true;
+        if (sidecarStatus.localNodeInitialized) {
+            sidecarStatus.monitoringIsUnstable = true;
+        }
     }
 }
 
