@@ -1,9 +1,10 @@
 import express from "express";
 import pino from "pino";
-import { register, collectDefaultMetrics, Gauge } from "prom-client";
-import { currentChain } from "./chains";
+import { register, collectDefaultMetrics } from "prom-client";
 import { performChecks } from "./checks";
-import { livenessProbe, readinessProbe, startupProbe } from "./probes";
+import { chainID } from "./common";
+import { currentHeightRequestStrategy } from "./height-strategies";
+import { currentProbeStrategies } from "./probe-strategies";
 
 const {
     INCLUDE_NODEJS_METRICS,
@@ -13,18 +14,17 @@ const {
 } = process.env;
 
 const listenPort = Number(LISTEN_PORT || 9090);
-
 export const logger = pino({ level: LOG_LEVEL || 'info' })
 
-export const sidecarStatus = {
-    monitoringIsUnstable: false,
-    localRPCAvailable: false,
-    localNodeInitialized: false,
-    localHeight: -2,
-    remoteHeight: -2,
-    currentDiff: 0,
-    isNotClimbing: false,
-};
+// export const sidecarStatus = {
+//     monitoringIsUnstable: false,
+//     localRPCAvailable: false,
+//     localNodeInitialized: false,
+//     localHeight: -2,
+//     remoteHeight: -2,
+//     currentDiff: 0,
+//     isNotClimbing: false,
+// };
 
 const app = express();
 
@@ -43,30 +43,38 @@ app.get("/metrics", async (_req, res) => {
     }
 });
 
-// Readiness probes determine whether or not a container is ready to serve requests.
-// If the readiness probe returns a non-200 response, Kubernetes removes the IP address of the container from the endpoints of all Services.
-// 
-// TODO: startup checks (that must pass before the other checks start working);
-
-app.get("/health/readiness", readinessProbe);
-app.get("/health/liveness", livenessProbe);
-app.get("/health/startup", startupProbe);
 
 (async () => {
-    if (!currentChain && !currentChain.id) {
-        logger.error("Chain is not configured.")
-    }
+    const { readiness, liveness, startup } = currentProbeStrategies
 
-    const { id, name } = currentChain
-    logger.info(`Starting checks for ${name} (${id})`)
+    // Init probe strategies if they have any init code
+    readiness.init ? readiness.init() : null
+    liveness.init ? liveness.init() : null
+    startup.init ? startup.init() : null
+
+    // Readiness probes determine whether or not a container is ready to serve requests.
+    // If the readiness probe returns a non-200 response, Kubernetes removes the IP address of the container from the endpoints of all Services.
+    app.get("/health/readiness", readiness.httpHandler);
+    app.get("/health/liveness", liveness.httpHandler);
+    app.get("/health/startup", startup.httpHandler);
+    logger.info({
+        readiness: readiness.name,
+        liveness: liveness.name,
+        startup: startup.name,
+    }, 'checks/probes selected');
+
+    const { name, init } = currentHeightRequestStrategy
+    init ? init : null
+    logger.info({ name, chainID }, 'height request strategy initiated');
+
     await performChecks();
 
-    // Run the check periodically
+    // Run the checks periodically
     const interval = Number(INTERVAL_SECONDS || 15) * 1000;
     const timer = setInterval(async () => {
         await performChecks();
     }, interval);
-    logger.info(`Running check every ${interval}ms`);
+    logger.info(`Running checks every ${interval}ms`);
 
 
     // Start server
