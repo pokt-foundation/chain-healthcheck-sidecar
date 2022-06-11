@@ -11,7 +11,12 @@ interface SidecarState {
 
     // If remote RPC is not available - we might not want to take drastic actions such as take the node out of the rotation
     remoteRpcUnstable: boolean,
-    // currentDiffLocalVSRemote?: number,
+
+    // Global settings
+    chainID?: string,
+    localRPCEndpoint?: string,
+    remoteRPCEndpoints?: string[],
+    performRemoteChecks?: boolean,
 }
 
 export const sidecarState: SidecarState = {

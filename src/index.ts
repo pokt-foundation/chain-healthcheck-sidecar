@@ -2,9 +2,10 @@ import express from "express";
 import pino from "pino";
 import { register, collectDefaultMetrics } from "prom-client";
 import { performChecks } from "./checks";
-import { chainID } from "./common";
+import { requireEnvar } from "./common";
 import { currentHeightRequestStrategy } from "./height-strategies";
 import { currentProbeStrategies } from "./probe-strategies";
+import { sidecarState } from "./state";
 
 const {
     INCLUDE_NODEJS_METRICS,
@@ -13,19 +14,8 @@ const {
     LISTEN_PORT,
 } = process.env;
 
-const listenPort = Number(LISTEN_PORT || 9090);
 export const logger = pino({ level: LOG_LEVEL || 'info' })
-
-// export const sidecarStatus = {
-//     monitoringIsUnstable: false,
-//     localRPCAvailable: false,
-//     localNodeInitialized: false,
-//     localHeight: -2,
-//     remoteHeight: -2,
-//     currentDiff: 0,
-//     isNotClimbing: false,
-// };
-
+const listenPort = Number(LISTEN_PORT || 9090);
 const app = express();
 
 // In case we want to troubleshoot the healthcheck sidecar itself.
@@ -43,14 +33,21 @@ app.get("/metrics", async (_req, res) => {
     }
 });
 
+// Set global sidecar settings
+const chainID = requireEnvar('SIDECAR_CHAIN_ID')
+const localRPCEndpoint = requireEnvar('LOCAL_RPC_ENDPOINT')
+const remoteRPCEndpoints = (requireEnvar('REMOTE_RPC_ENDPOINTS') || '').split(',')
+const performRemoteChecks = remoteRPCEndpoints.length != 0
+Object.assign(sidecarState, { chainID, localRPCEndpoint, remoteRPCEndpoints, performRemoteChecks });
 
 (async () => {
+    // Configure probes
     const { readiness, liveness, startup } = currentProbeStrategies
 
     // Init probe strategies if they have any init code
-    readiness.init ? readiness.init() : null
-    liveness.init ? liveness.init() : null
-    startup.init ? startup.init() : null
+    readiness.init ? await readiness.init() : null
+    liveness.init ? await liveness.init() : null
+    startup.init ? await startup.init() : null
 
     // Readiness probes determine whether or not a container is ready to serve requests.
     // If the readiness probe returns a non-200 response, Kubernetes removes the IP address of the container from the endpoints of all Services.
@@ -63,24 +60,23 @@ app.get("/metrics", async (_req, res) => {
         startup: startup.name,
     }, 'checks/probes selected');
 
-    const { name, init } = currentHeightRequestStrategy
-    init ? init : null
-    logger.info({ name, chainID }, 'height request strategy initiated');
+    // Configure height checks
+    const { init } = currentHeightRequestStrategy
+    init ? await init() : null
 
-    await performChecks();
+    // Do very first run
+    performChecks();
 
-    // Run the checks periodically
+    // Set up checks to run periodically
     const interval = Number(INTERVAL_SECONDS || 15) * 1000;
-    const timer = setInterval(async () => {
-        await performChecks();
-    }, interval);
+    const timer = setInterval(() => performChecks(), interval);
     logger.info(`Running checks every ${interval}ms`);
 
-
-    // Start server
+    // Start web server
     const server = app.listen(listenPort);
     logger.info(`Listening on :${listenPort}`);
 
+    // Handle termination
     process.on("SIGTERM", () => {
         logger.info("SIGTERM signal received: stopping periodic checks");
         clearInterval(timer)
@@ -90,4 +86,5 @@ app.get("/metrics", async (_req, res) => {
             logger.info("HTTP server closed");
         });
     });
-})();
+})()
+

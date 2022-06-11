@@ -27,9 +27,11 @@ const pickProbe = (name) => {
         return probe
     }
 
-    const availableProbesNames = availableProbes.map((pr) => pr.name)
-    logger.error({ availableProbes: availableProbesNames }, `probe with name "${name}" not found, using alwaysFail to signal about this issue`)
+    // const availableProbesNames = availableProbes.map((pr) => pr.name)
+    // logger.error({ availableProbes: availableProbesNames }, `probe with name "${name}" not found, using alwaysFail to signal about this issue`)
 
+
+    // using alwaysFail to signal about this issue
     return alwaysFailure
 }
 
@@ -38,4 +40,3 @@ export const currentProbeStrategies = {
     readiness: pickProbe(READINESS_PROBE_STRATEGY),
     liveness: pickProbe(LIVENESS_PROBE_STRATEGY)
 }
-// export default currentStrategies

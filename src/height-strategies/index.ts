@@ -1,4 +1,3 @@
-import { logger } from "..";
 import evm from "./evm";
 
 const {
@@ -21,9 +20,7 @@ const pickStrategy = (name) => {
         return strategy
     }
 
-    const err = new Error(`Height request strategy with name "${name}" not found. We need to know how to query height of the local blockchain node.`)
-    logger.error(err)
-    throw err
+    throw new Error(`Height request strategy with name "${name}" not found. We need to know how to query height of the local blockchain node. Check HEIGHT_CHECK_STRATEGY envar.`)
 }
 
 export const currentHeightRequestStrategy = pickStrategy(HEIGHT_CHECK_STRATEGY)

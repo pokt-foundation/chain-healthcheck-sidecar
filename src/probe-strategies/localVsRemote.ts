@@ -1,6 +1,5 @@
 import { Gauge } from "prom-client";
 import { logger } from ".."
-import { chainID, performRemoteChecks } from "../common"
 import { sidecarState } from "../state"
 import { ProbeStrategy } from "./index"
 
@@ -9,7 +8,7 @@ const {
     HEIGHT_DIFF_THRESHOLD
 } = process.env;
 
-const state = {
+export const state = {
     currentDiff: 0,
 
     // Default: false
@@ -17,11 +16,15 @@ const state = {
 
     // Default: 100
     diffThreshold: Number(HEIGHT_DIFF_THRESHOLD || 100),
+
+    initialized: false,
 }
 
-const localVsRemote: ProbeStrategy = {
+export const localVsRemote: ProbeStrategy = {
     name: 'localVsRemote',
     backgroundProcessing: async () => {
+        const { chainID } = sidecarState
+
         if (sidecarState.lastLocalNodeHeight > 0 && sidecarState.lastRemoteNodeHeight > 0) {
             state.currentDiff = sidecarState.lastRemoteNodeHeight - sidecarState.lastLocalNodeHeight;
             heightDiffMetric.set({ chainID, threshold: String(state.diffThreshold) }, state.currentDiff)
@@ -37,13 +40,15 @@ const localVsRemote: ProbeStrategy = {
             remoteRpcUnstable
         } = sidecarState;
 
+        const { currentDiff, diffThreshold, failOnRemoteRpcUnavailable } = state
+
         if (!localRpcAvailable) {
             logger.info({ lastLocalNodeHeight, localRpcAvailable }, '[localVsRemote]: Failing a health-check as local RPC is available')
             return res.status(503).send(`RPC not ready, reported height ${lastLocalNodeHeight}`);
         }
 
         if (remoteRpcUnstable) {
-            if (state.failOnRemoteRpcUnavailable) {
+            if (failOnRemoteRpcUnavailable) {
                 return res.status(503).send(`Remote RPC is unstable, and sidecar configured to fail checks when that happens.`);
             }
             return res.status(200).send(`Remote ${lastRemoteNodeHeight}, local ${lastLocalNodeHeight}, but ignoring the difference as remoteRpcUnstable`);
@@ -53,7 +58,6 @@ const localVsRemote: ProbeStrategy = {
             return res.status(200).send("Local node is higher or the same as remote.");
         }
 
-        const { currentDiff, diffThreshold } = state
 
         if (currentDiff <= diffThreshold) {
             return res
@@ -72,6 +76,8 @@ const localVsRemote: ProbeStrategy = {
             );
     },
     init: async () => {
+        const { performRemoteChecks } = sidecarState
+
         if (!performRemoteChecks) {
             const err = new Error('Remote RPCs are required for localVsRemote strategy. Check configuration.')
             logger.error(err)
@@ -81,6 +87,8 @@ const localVsRemote: ProbeStrategy = {
         const { failOnRemoteRpcUnavailable, diffThreshold } = state
 
         logger.info({ failOnRemoteRpcUnavailable, diffThreshold }, '[localVsRemote]: strategy configured')
+
+        state.initialized = true
     }
 }
 
@@ -89,5 +97,3 @@ export const heightDiffMetric = new Gauge({
     help: "Difference between local and remote from sidecar point of view",
     labelNames: ["chainID", "threshold"],
 });
-
-export default localVsRemote

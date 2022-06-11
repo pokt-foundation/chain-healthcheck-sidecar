@@ -1,26 +1,12 @@
 import { logger } from ".";
-import { performRemoteChecks, chainID } from "./common";
 import { currentHeightRequestStrategy } from "./height-strategies";
 import { sidecarState } from "./state";
 import { Gauge } from "prom-client";
-import { currentProbeStrategies, ProbeStrategy } from "./probe-strategies";
-
-// const {
-//     STALE_HEIGHT_CHECK_ENABLED,
-//     STALE_HEIGHT_CHECK_HISTORY_LENGTH,
-// } = process.env;
-
-// // Whether to turn off stale height check
-// export const staleHeightCheckEnabled = STALE_HEIGHT_CHECK_ENABLED === "false" ? false : true
-// // Length of block height history to maintain. Each check is an element in the array.
-// // So if length is 100, and we perform check each 15 seconds,
-// // it will take 25 minutes to populate the history and determine whether the node is not climbing.
-// export const staleHeightCheckHistoryLength = Number(STALE_HEIGHT_CHECK_HISTORY_LENGTH || 70)
-// const heightHistory = []
+import { currentProbeStrategies } from "./probe-strategies";
 
 export const performChecks = async () => {
     await updateHeightLocal()
-    if (performRemoteChecks) {
+    if (sidecarState.performRemoteChecks) {
         await updateHeightRemote()
     }
 
@@ -42,6 +28,7 @@ export const performChecks = async () => {
 
 export const updateHeightLocal = async () => {
     const { getLocalHeight } = currentHeightRequestStrategy
+    const { chainID } = sidecarState
     sidecarState.lastLocalNodeHeight = await getLocalHeight();
 
     // Negative height means RPC is not available.
@@ -65,6 +52,7 @@ export const updateHeightLocal = async () => {
 
 export const updateHeightRemote = async () => {
     const { getRemoteHeight } = currentHeightRequestStrategy
+    const { chainID } = sidecarState
     sidecarState.lastRemoteNodeHeight = await getRemoteHeight()
     if (sidecarState.lastRemoteNodeHeight > 0) {
         remoteHeightMetric.labels({ chainID }).set(sidecarState.lastRemoteNodeHeight)
@@ -77,43 +65,9 @@ export const updateHeightRemote = async () => {
         if (!sidecarState.remoteRpcUnstable) {
             logger.info({ sidecarState }, '[UPDATE_HEIGHT]: remote RPC is no longer available - setting remoteRpcUnstable to true')
         }
-
-        // If remote RPC call is not successful, we should probably ignore the difference between local & remote.
-        // So we don't end up in a situation when oracles went bad and our service degrades because of that.
-        // if (sidecarState.localRpcInitiated) {
         sidecarState.remoteRpcUnstable = true;
-        // }
     }
 }
-
-// export const staleHeightCheck = async () => {
-//     if (sidecarStatus.localHeight < 0) {
-//         logger.info("[STALE_HEIGHT_CHECK]: Skipped - local height is negative, meaning local node is not available")
-//         return
-//     }
-
-//     if (heightHistory.length >= staleHeightCheckHistoryLength) {
-//         // Remove first (oldest) result from history
-//         heightHistory.shift()
-
-//         // Add new result to the end of the array
-//         heightHistory.push(sidecarStatus.localHeight)
-
-//         // If all elements in `heightHistory` are the same, set `isNotClimbing` to true.
-//         if (heightHistory.every(val => val === heightHistory[0])) {
-//             logger.debug({ heightHistory, isNotClimbing: sidecarStatus.isNotClimbing, staleHeightCheckHistoryLength })
-//             logger.warn("[STALE_HEIGHT_CHECK]: All block heights in history are the same - the node is not climbing")
-//             sidecarStatus.isNotClimbing = true
-//         } else {
-//             sidecarStatus.isNotClimbing = false
-//         }
-//     } else {
-//         // Add new result to the end of the array
-//         heightHistory.push(sidecarStatus.localHeight)
-//     }
-// }
-
-
 
 export const localHeightMetric = new Gauge({
     name: "blockchain_local_node_height",
