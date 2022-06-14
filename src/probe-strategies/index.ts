@@ -1,7 +1,9 @@
 import { RequestHandler } from 'express';
-import { logger } from '..';
 import alwaysHealthy from './alwaysHealthy';
 import alwaysFailure from './alwaysFailure';
+import heightNotClimbing from './heightNotClimbing';
+import localVsRemote from './localVsRemote';
+import localRpcAvailable from './localRpcAvailable';
 
 const {
     READINESS_PROBE_STRATEGY,
@@ -9,7 +11,13 @@ const {
     STARTUP_PROBE_STRATEGY,
 } = process.env;
 
-const availableProbes: ProbeStrategy[] = [alwaysHealthy, alwaysFailure]
+const availableProbes: ProbeStrategy[] = [
+    alwaysHealthy,
+    alwaysFailure,
+    heightNotClimbing,
+    localVsRemote,
+    localRpcAvailable
+]
 
 export interface ProbeStrategy {
     name: string;
@@ -27,9 +35,8 @@ const pickProbe = (name) => {
         return probe
     }
 
-    // const availableProbesNames = availableProbes.map((pr) => pr.name)
-    // logger.error({ availableProbes: availableProbesNames }, `probe with name "${name}" not found, using alwaysFail to signal about this issue`)
-
+    const availableProbesNames = availableProbes.map((pr) => pr.name)
+    console.error({ availableProbes: availableProbesNames }, `probe with name "${name}" not found, using alwaysFail to signal about this issue`)
 
     // using alwaysFail to signal about this issue
     return alwaysFailure

@@ -29,14 +29,17 @@ export const remoteRPCIterator = async (handler: (...any) => Promise<number>, ..
 export const localRPCWrapper = async (handler: (...any) => Promise<number>, ...args) => {
     const { localRPCEndpoint: destination, chainID } = sidecarState
 
+    // logger.debug({ sidecarState }, 'yayya')
     try {
-        return await handler(...args)
+        return await handler(destination, ...args)
     } catch (error) {
         // Only count errors after the node has been initialized.
         if (sidecarState.localRpcInitiated) {
             failedRpcChecks.labels({ chainID, destination }).inc()
         }
-        logger.error({ error, destination }, `Local blockchain node is unavailable`)
+
+        // logger.error(error)
+        logger.error({ error: error.message, destination }, `Local blockchain node is unavailable`)
         return -1
     }
 }

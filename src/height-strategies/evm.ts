@@ -10,10 +10,10 @@ const {
 
 const method = EVM_BLOCK_NUMBER_METHOD_NAME || 'eth_blockNumber'
 
-const getHeightEVM = async (rpc: string) => {
+const getHeightEVM = async (url: string) => {
     const result = await axios({
         method: "POST",
-        url: rpc,
+        url,
         data: {
             jsonrpc: "2.0",
             id: 1,
@@ -25,7 +25,7 @@ const getHeightEVM = async (rpc: string) => {
 
     const { data } = result
 
-    logger.debug({ data, rpc, method }, 'response from EVM RPC')
+    logger.debug({ data, url, method }, 'response from EVM RPC')
 
     if (typeof data.result === 'number') {
         return data.result

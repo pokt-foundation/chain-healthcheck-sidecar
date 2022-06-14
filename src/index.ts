@@ -65,7 +65,7 @@ Object.assign(sidecarState, { chainID, localRPCEndpoint, remoteRPCEndpoints, per
     init ? await init() : null
 
     // Do very first run
-    performChecks();
+    await performChecks();
 
     // Set up checks to run periodically
     const interval = Number(INTERVAL_SECONDS || 15) * 1000;

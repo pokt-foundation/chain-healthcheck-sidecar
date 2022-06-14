@@ -97,3 +97,5 @@ export const heightDiffMetric = new Gauge({
     help: "Difference between local and remote from sidecar point of view",
     labelNames: ["chainID", "threshold"],
 });
+
+export default localVsRemote
