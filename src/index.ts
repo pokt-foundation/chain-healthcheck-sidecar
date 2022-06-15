@@ -9,7 +9,6 @@ import { sidecarState } from "./state";
 
 const {
     INCLUDE_NODEJS_METRICS,
-    INTERVAL_SECONDS,
     LOG_LEVEL,
     LISTEN_PORT,
 } = process.env;
@@ -68,9 +67,8 @@ Object.assign(sidecarState, { chainID, localRPCEndpoint, remoteRPCEndpoints, per
     await performChecks();
 
     // Set up checks to run periodically
-    const interval = Number(INTERVAL_SECONDS || 15) * 1000;
-    const timer = setInterval(() => performChecks(), interval);
-    logger.info(`Running checks every ${interval}ms`);
+    const timer = setInterval(() => performChecks(), sidecarState.checkIntervalMs);
+    logger.info(`Running checks every ${sidecarState.checkIntervalMs}ms`);
 
     // Start web server
     const server = app.listen(listenPort);

@@ -4,6 +4,7 @@ import alwaysFailure from './alwaysFailure';
 import heightNotClimbing from './heightNotClimbing';
 import localVsRemote from './localVsRemote';
 import localRpcAvailable from './localRpcAvailable';
+import customAvax from './customAvax';
 
 const {
     READINESS_PROBE_STRATEGY,
@@ -16,7 +17,8 @@ const availableProbes: ProbeStrategy[] = [
     alwaysFailure,
     heightNotClimbing,
     localVsRemote,
-    localRpcAvailable
+    localRpcAvailable,
+    customAvax,
 ]
 
 export interface ProbeStrategy {

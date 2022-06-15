@@ -91,7 +91,7 @@ const heightNotClimbing: ProbeStrategy = {
 
     },
     init: async () => {
-        const { performRemoteChecks } = sidecarState
+        const { performRemoteChecks, checkIntervalMs } = sidecarState
 
         if (!performRemoteChecks) {
             const err = new Error('Remote RPCs are required for heightNotClimbing strategy. Check configuration.')
@@ -99,7 +99,7 @@ const heightNotClimbing: ProbeStrategy = {
             throw err
         }
 
-        logger.info({ state }, '[heightNotClimbing]: strategy configured')
+        logger.info({ state }, `[heightNotClimbing]: strategy configured. Approximate time from first block stuck to failing the check: ${checkIntervalMs / 1000 * state.staleHeightCheckHistoryLength} seconds. Make sure this number is larger than block time, otherwise check will always fail thinking the node is not climbing.`)
     }
 }
 

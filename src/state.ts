@@ -1,3 +1,6 @@
+const {
+    INTERVAL_SECONDS,
+} = process.env;
 
 interface SidecarState {
     lastLocalNodeHeight: number,
@@ -17,6 +20,7 @@ interface SidecarState {
     localRPCEndpoint?: string,
     remoteRPCEndpoints?: string[],
     performRemoteChecks?: boolean,
+    checkIntervalMs: number,
 }
 
 export const sidecarState: SidecarState = {
@@ -25,4 +29,5 @@ export const sidecarState: SidecarState = {
     localRpcAvailable: false,
     localRpcInitiated: false,
     remoteRpcUnstable: false,
+    checkIntervalMs: Number(INTERVAL_SECONDS || 15) * 1000,
 }
