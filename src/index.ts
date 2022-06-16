@@ -1,31 +1,20 @@
 import express from "express";
 import pino from "pino";
-import { register, collectDefaultMetrics, Gauge } from "prom-client";
-import { currentChain } from "./chains";
+import { register, collectDefaultMetrics } from "prom-client";
 import { performChecks } from "./checks";
-import { livenessProbe, readinessProbe, startupProbe } from "./probes";
+import { requireEnvar } from "./common";
+import { currentHeightRequestStrategy } from "./height-strategies";
+import { currentProbeStrategies } from "./probe-strategies";
+import { sidecarState } from "./state";
 
 const {
     INCLUDE_NODEJS_METRICS,
-    INTERVAL_SECONDS,
     LOG_LEVEL,
     LISTEN_PORT,
 } = process.env;
 
-const listenPort = Number(LISTEN_PORT || 9090);
-
 export const logger = pino({ level: LOG_LEVEL || 'info' })
-
-export const sidecarStatus = {
-    monitoringIsUnstable: false,
-    localRPCAvailable: false,
-    localNodeInitialized: false,
-    localHeight: -2,
-    remoteHeight: -2,
-    currentDiff: 0,
-    isNotClimbing: false,
-};
-
+const listenPort = Number(LISTEN_PORT || 9090);
 const app = express();
 
 // In case we want to troubleshoot the healthcheck sidecar itself.
@@ -43,36 +32,49 @@ app.get("/metrics", async (_req, res) => {
     }
 });
 
-// Readiness probes determine whether or not a container is ready to serve requests.
-// If the readiness probe returns a non-200 response, Kubernetes removes the IP address of the container from the endpoints of all Services.
-// 
-// TODO: startup checks (that must pass before the other checks start working);
-
-app.get("/health/readiness", readinessProbe);
-app.get("/health/liveness", livenessProbe);
-app.get("/health/startup", startupProbe);
+// Set global sidecar settings
+const chainID = requireEnvar('SIDECAR_CHAIN_ID')
+const localRPCEndpoint = requireEnvar('LOCAL_RPC_ENDPOINT')
+const remoteRPCEndpoints = (requireEnvar('REMOTE_RPC_ENDPOINTS') || '').split(',')
+const performRemoteChecks = remoteRPCEndpoints.length != 0
+Object.assign(sidecarState, { chainID, localRPCEndpoint, remoteRPCEndpoints, performRemoteChecks });
 
 (async () => {
-    if (!currentChain && !currentChain.id) {
-        logger.error("Chain is not configured.")
-    }
+    // Configure probes
+    const { readiness, liveness, startup } = currentProbeStrategies
 
-    const { id, name } = currentChain
-    logger.info(`Starting checks for ${name} (${id})`)
+    // Init probe strategies if they have any init code
+    readiness.init ? await readiness.init() : null
+    liveness.init ? await liveness.init() : null
+    startup.init ? await startup.init() : null
+
+    // Readiness probes determine whether or not a container is ready to serve requests.
+    // If the readiness probe returns a non-200 response, Kubernetes removes the IP address of the container from the endpoints of all Services.
+    app.get("/health/readiness", readiness.httpHandler);
+    app.get("/health/liveness", liveness.httpHandler);
+    app.get("/health/startup", startup.httpHandler);
+    logger.info({
+        readiness: readiness.name,
+        liveness: liveness.name,
+        startup: startup.name,
+    }, 'checks/probes selected');
+
+    // Configure height checks
+    const { init } = currentHeightRequestStrategy
+    init ? await init() : null
+
+    // Do very first run
     await performChecks();
 
-    // Run the check periodically
-    const interval = Number(INTERVAL_SECONDS || 15) * 1000;
-    const timer = setInterval(async () => {
-        await performChecks();
-    }, interval);
-    logger.info(`Running check every ${interval}ms`);
+    // Set up checks to run periodically
+    const timer = setInterval(() => performChecks(), sidecarState.checkIntervalMs);
+    logger.info(`Running checks every ${sidecarState.checkIntervalMs}ms`);
 
-
-    // Start server
+    // Start web server
     const server = app.listen(listenPort);
     logger.info(`Listening on :${listenPort}`);
 
+    // Handle termination
     process.on("SIGTERM", () => {
         logger.info("SIGTERM signal received: stopping periodic checks");
         clearInterval(timer)
@@ -82,4 +84,5 @@ app.get("/health/startup", startupProbe);
             logger.info("HTTP server closed");
         });
     });
-})();
+})()
+
