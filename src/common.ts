@@ -29,7 +29,6 @@ export const remoteRPCIterator = async (handler: (...any) => Promise<number>, ..
 export const localRPCWrapper = async (handler: (...any) => Promise<number>, ...args) => {
     const { localRPCEndpoint: destination, chainID } = sidecarState
 
-    // logger.debug({ sidecarState }, 'yayya')
     try {
         return await handler(destination, ...args)
     } catch (error) {
