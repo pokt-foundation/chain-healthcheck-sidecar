@@ -1,14 +1,20 @@
-import axios from "axios"
+import axios, { AxiosResponse } from "axios"
 import { HeightStrategy } from "."
 import { logger } from ".."
 import { localRPCWrapper, remoteRPCIterator } from "../common"
 
 const {
     // use `hmyv2_blockNumber` for Harmony
-    EVM_BLOCK_NUMBER_METHOD_NAME
+    EVM_BLOCK_NUMBER_METHOD_NAME,
+    EVM_BLOCK_NUMBER_FIELD_PATH
 } = process.env;
 
 const method = EVM_BLOCK_NUMBER_METHOD_NAME || 'eth_blockNumber'
+const fieldPath = EVM_BLOCK_NUMBER_FIELD_PATH || 'result'
+
+/** Gets an object value from a period-delimited string path. eg. "result.healthy" */
+const resolvePath = (response: AxiosResponse, path: string) =>
+    path.split('.').reduce((p, c) => (p && p[c]) ?? null, response);
 
 const getHeightEVM = async (url: string) => {
     const result = await axios({
@@ -24,13 +30,14 @@ const getHeightEVM = async (url: string) => {
     })
 
     const { data } = result
+    const blockNumber = resolvePath(data, fieldPath)
 
     logger.debug({ data, url, method }, 'response from EVM RPC')
 
-    if (typeof data.result === 'number') {
-        return data.result
+    if (typeof blockNumber === 'number') {
+        return blockNumber
     } else {
-        return parseInt(data.result, 16)
+        return parseInt(blockNumber, 16)
     }
 }
 
