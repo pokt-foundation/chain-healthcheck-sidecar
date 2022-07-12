@@ -87,7 +87,12 @@ LOG_LEVEL=debug SIDECAR_CHAIN_ID=0040 HEIGHT_CHECK_STRATEGY=evm EVM_BLOCK_NUMBER
 
 Avalanche (custom strategy, uncommon RPC url):
 ```
-LOG_LEVEL=debug SIDECAR_CHAIN_ID=0003 HEIGHT_CHECK_STRATEGY=evm LOCAL_RPC_ENDPOINT="http://localhost:9650/ext/bc/C/rpc" REMOTE_RPC_ENDPOINTS="https://api.avax.network/ext/bc/C/rpc" STARTUP_PROBE_STRATEGY=localRpcAvailable READINESS_PROBE_STRATEGY=localVsRemote LIVENESS_PROBE_STRATEGY="customAvax" npm run star
+LOG_LEVEL=debug SIDECAR_CHAIN_ID=0003 HEIGHT_CHECK_STRATEGY=evm LOCAL_RPC_ENDPOINT="http://localhost:9650/ext/bc/C/rpc" REMOTE_RPC_ENDPOINTS="https://api.avax.network/ext/bc/C/rpc" STARTUP_PROBE_STRATEGY=localRpcAvailable READINESS_PROBE_STRATEGY=localVsRemote LIVENESS_PROBE_STRATEGY="customAvax" npm run start
+```
+
+Pocket network:
+```
+LOG_LEVEL=debug SIDECAR_CHAIN_ID=0001 HEIGHT_CHECK_STRATEGY=pocket LOCAL_RPC_ENDPOINT="http://localhost:8081" REMOTE_RPC_ENDPOINTS="https://SOME_PUBLIC_RPC" STARTUP_PROBE_STRATEGY=localRpcAvailable READINESS_PROBE_STRATEGY=localVsRemote LIVENESS_PROBE_STRATEGY=heightNotClimbing npm run start
 ```
 
 

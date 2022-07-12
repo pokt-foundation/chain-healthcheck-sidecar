@@ -16,7 +16,7 @@ const getHeight = async (url: string) => {
 
     const { data } = result
 
-    logger.debug({ data }, 'response from EVM RPC')
+    logger.debug({ data }, 'response from pocket RPC')
 
     const { height } = data
 
@@ -27,7 +27,7 @@ const getHeight = async (url: string) => {
     }
 }
 
-const evm: HeightStrategy = {
+const pocket: HeightStrategy = {
     name: 'pocket',
     getLocalHeight: () => localRPCWrapper(getHeight),
     getRemoteHeight: () => remoteRPCIterator(getHeight),
@@ -36,4 +36,4 @@ const evm: HeightStrategy = {
     }
 }
 
-export default evm
+export default pocket
