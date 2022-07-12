@@ -1,4 +1,5 @@
 import evm from "./evm";
+import pocket from "./pocket";
 
 const {
     HEIGHT_CHECK_STRATEGY,
@@ -12,7 +13,7 @@ export interface HeightStrategy {
     init?: () => Promise<void>
 }
 
-export const availableHeightRequestStrategies: HeightStrategy[] = [evm]
+export const availableHeightRequestStrategies: HeightStrategy[] = [evm, pocket]
 
 const pickStrategy = (name) => {
     const strategy = availableHeightRequestStrategies.find(st => st.name === name)
