@@ -5,13 +5,14 @@ import { localRPCWrapper, remoteRPCIterator } from "../common"
 
 const getHeight = async (url: string) => {
     const result = await axios({
-        "method": "POST",
-        "url": `${url}/v1/query/height`,
-        "headers": {
+        method: "POST",
+        url: `${url}/v1/query/height`,
+        headers: {
             "Content-Type": "application/json",
             "Accept": "application/json"
         },
-        "data": {}
+        data: {},
+        timeout: 5000
     })
 
     const { data } = result
