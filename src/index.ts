@@ -6,6 +6,7 @@ import { requireEnvar } from "./common";
 import { currentHeightRequestStrategy } from "./height-strategies";
 import { currentProbeStrategies } from "./probe-strategies";
 import { sidecarState } from "./state";
+import os from 'os';
 
 const {
     INCLUDE_NODEJS_METRICS,
@@ -35,7 +36,9 @@ app.get("/metrics", async (_req, res) => {
 // Set global sidecar settings
 const chainID = requireEnvar('SIDECAR_CHAIN_ID')
 const localRPCEndpoint = requireEnvar('LOCAL_RPC_ENDPOINT')
-const remoteRPCEndpoints = (requireEnvar('REMOTE_RPC_ENDPOINTS') || '').split(',')
+const remoteRPCEndpoints = process.env.USE_POKTSCAN !== 'true'
+    ? [] // Provide an empty array if USE_POKTSCAN is true
+    : (requireEnvar('REMOTE_RPC_ENDPOINTS') || '').split(',');
 const performRemoteChecks = remoteRPCEndpoints.length != 0
 Object.assign(sidecarState, { chainID, localRPCEndpoint, remoteRPCEndpoints, performRemoteChecks });
 
